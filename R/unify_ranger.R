@@ -42,13 +42,21 @@ ranger.unify <- function(rf_model, data) {
   }
   n <- rf_model$num.trees
   x <- lapply(1:n, function(tree) {
-    tree_data <- as.data.table(ranger::treeInfo(rf_model, tree = tree))
+    tree_data <- data.table::as.data.table(ranger::treeInfo(rf_model, tree = tree))
+    if(!"prediction" %in% colnames(tree_data)){
+      cols <- grep("pred\\.",colnames(tree_data))
+      tree_data$prediction <- apply(tree_data[,..cols],1,function(row){
+        p <- ifelse(all(is.na(row)),NA,which.max(row)) # TODO check for character classes
+        return(p)
+        })
+    }
     tree_data[, c("nodeID",  "leftChild", "rightChild", "splitvarName", "splitval", "prediction")]
+
   })
   times_vec <- sapply(x, nrow)
-  y <- rbindlist(x)
+  y <- data.table::rbindlist(x)
   y[, Tree := rep(0:(n - 1), times = times_vec)]
-  setnames(y, c("Node", "Yes", "No", "Feature", "Split",  "Prediction", "Tree"))
+  data.table::setnames(y, c("Node", "Yes", "No", "Feature", "Split",  "Prediction", "Tree"))
   y[, Feature := as.character(Feature)]
   y[y$Yes < 0, "Yes"] <- NA
   y[y$No < 0, "No"] <- NA
@@ -70,7 +78,7 @@ ranger.unify <- function(rf_model, data) {
   y[is.na(Feature), Prediction := Prediction / n]
 
 
-  setcolorder(y, c("Tree", "Node", "Feature", "Decision.type", "Split", "Yes", "No", "Missing", "Prediction", "Cover"))
+  data.table::setcolorder(y, c("Tree", "Node", "Feature", "Decision.type", "Split", "Yes", "No", "Missing", "Prediction", "Cover"))
 
   ret <- list(model = as.data.frame(y), data = as.data.frame(data))
   class(ret) <- "model_unified"
