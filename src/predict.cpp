@@ -3,6 +3,10 @@ using namespace Rcpp;
 
 // [[Rcpp::plugins(cpp11)]]
 
+int get_mode(NumericVector y){
+  return y[1];
+}
+
 // [[Rcpp::export]]
 NumericVector predict_cpp(DataFrame x, DataFrame is_na, IntegerVector roots, IntegerVector yes, IntegerVector no,
                           IntegerVector missing, LogicalVector is_leaf, IntegerVector feature, NumericVector split,
@@ -11,7 +15,8 @@ NumericVector predict_cpp(DataFrame x, DataFrame is_na, IntegerVector roots, Int
   for (int i = 0; i < x.ncol(); ++i) {
     NumericVector observation = x[i];
     LogicalVector observation_is_na = is_na[i];
-
+    int node_counter = 1;
+    NumericVector tree_predictions(roots.size());
     for (int node: roots) {
       while (!is_leaf[node]) {
         if (observation_is_na[feature[node]]) {
@@ -23,8 +28,13 @@ NumericVector predict_cpp(DataFrame x, DataFrame is_na, IntegerVector roots, Int
           node = no[node];
         }
       }
-      prediction[i] += value[node];
+      tree_predictions[node_counter] = value[node];
+      node_counter += 1;
+      //Rcout << "pred:value" << prediction[i] << " : " << value[node] << std::endl;
+      //prediction[i] = ((prediction[i]*node_counter - 1) + value[node])/node_counter;
     }
+    prediction[i] = get_mode(tree_predictions);
+
   }
 
   return prediction;
