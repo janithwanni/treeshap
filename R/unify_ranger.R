@@ -75,7 +75,7 @@ ranger.unify <- function(rf_model, data) {
   # treeSHAP assumes, that [prediction = sum of predictions of the trees]
   # in random forest [prediction = mean of predictions of the trees]
   # so here we correct it by adjusting leaf prediction values
-  y[is.na(Feature), Prediction := Prediction / n]
+  # y[is.na(Feature), Prediction := Prediction / n]
 
 
   data.table::setcolorder(y, c("Tree", "Node", "Feature", "Decision.type", "Split", "Yes", "No", "Missing", "Prediction", "Cover"))
